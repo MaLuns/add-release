@@ -1,0 +1,22 @@
+{
+  "name": "add-release",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "ncc build src/main.ts --minify"
+  },
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^5.1.1",
+    "glob": "^8.0.3",
+    "mime": "^3.0.0",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.18",
+    "@types/node-fetch": "^2.5.12",
+    "@vercel/ncc": "^0.36.0",
+    "typescript": "^4.9.4"
+  }
+}
