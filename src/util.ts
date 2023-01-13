@@ -76,7 +76,11 @@ export const parseInputGenerateByCommitRules = (rules: string) => {
  * @param branch 
  * @returns 
  */
-export const parseBranch = (branch: string | undefined) => branch?.split('/').reverse[0]
+export const parseBranch = (branch: string | undefined) => {
+    console.log(branch);
+    console.log(`👩‍🏭 Current running path ${branch}  ...`);
+    return branch?.split('/').reverse[0]
+}
 
 /**
  * 解析配置
