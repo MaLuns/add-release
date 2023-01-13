@@ -77,7 +77,6 @@ export const parseInputGenerateByCommitRules = (rules: string) => {
  * @returns 
  */
 export const parseBranch = (branch: string | undefined) => {
-    console.log(`👩‍🏭 Current running path ${branch}  ...`);
     return branch?.split('/').reverse[0]
 }
 
@@ -87,7 +86,7 @@ export const parseBranch = (branch: string | undefined) => {
  * @returns 
  */
 export const parseConfig = (env: Env): Config => {
-    console.log(env)
+    console.log(JSON.stringify(env, null, 2))
     return {
         github_token: env.GITHUB_TOKEN || env.INPUT_TOKEN || "",
         github_ref: env.GITHUB_REF || "",
