@@ -29,6 +29,7 @@ inputs:
   branch:
     description: "Gives the release a branch. Defaults to the ref path to the workflow"
     required: false
+      default: ${{ github.workflow_ref }}
   token:
     description: "Authorized secret GitHub Personal Access Token. Defaults to github.token"
     required: false
