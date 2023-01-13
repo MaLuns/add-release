@@ -4,6 +4,7 @@ import { setFailed, setOutput } from "@actions/core";
 import { env } from "process";
 import { getOctokit } from "@actions/github";
 import { createRelease, GitHubReleaser, upload } from "./releaser";
+import { getReleaseNotes, GitHubCommiter } from "./commiter";
 
 async function run() {
     try {
@@ -54,6 +55,7 @@ async function run() {
             if (files.length == 0) {
                 console.warn(`🤔 ${config.input_files} not include valid file.`);
             }
+
             const currentAssets = rel.assets;
             const assets = await Promise.all(
                 files.map(async (path) => {

@@ -1,7 +1,9 @@
 import * as glob from "glob";
 import { statSync, readFileSync } from "fs";
 
-
+/**
+ * 配置类型
+ */
 export interface Config {
     github_token: string;
     github_ref: string;
@@ -17,10 +19,20 @@ export interface Config {
     input_prerelease?: boolean;
     input_target_commitish?: string;
     input_generate_release_notes?: boolean;
+    input_generate_by_commit?: boolean;
+    input_generate_by_commit_rules?: {
+        rule: string,
+        title: string
+    }[]
 }
 
 type Env = { [key: string]: string | undefined };
 
+/**
+ * 解析输入文件路径
+ * @param files 
+ * @returns 
+ */
 export const parseInputFiles = (files: string): string[] => {
     return files.split(/\r?\n/).reduce<string[]>(
         (acc, line) => acc
@@ -31,8 +43,30 @@ export const parseInputFiles = (files: string): string[] => {
     );
 };
 
+export const parseInputGenerateByCommitRules = (rules: string) => {
+    try {
+        const defaultRules = [
+            {
+                title: '### 🚀 Features',
+                rule: 'feat:'
+            },
+            {
+                title: '### 🎈 Performance',
+                rule: 'perf:'
+            },
+            {
+                title: '### 🐞 Bug Fixes',
+                rule: 'fix:'
+            }
+        ]
+        return rules ? JSON.parse(rules) : defaultRules
+    } catch (error) {
+        throw new Error(`⚠️ Rules resolution failure`);
+    }
+}
+
 /**
- * 格式化配置
+ * 解析配置
  * @param env 
  * @returns 
  */
@@ -41,6 +75,7 @@ export const parseConfig = (env: Env): Config => {
         github_token: env.GITHUB_TOKEN || env.INPUT_TOKEN || "",
         github_ref: env.GITHUB_REF || "",
         github_repository: env.INPUT_REPOSITORY || env.GITHUB_REPOSITORY || "",
+        // user provided
         input_name: env.INPUT_NAME,
         input_tag_name: env.INPUT_TAG_NAME?.trim(),
         input_body: env.INPUT_BODY,
@@ -50,6 +85,8 @@ export const parseConfig = (env: Env): Config => {
         input_prerelease: env.INPUT_PRERELEASE ? env.INPUT_PRERELEASE == "true" : undefined,
         input_target_commitish: env.INPUT_TARGET_COMMITISH || undefined,
         input_generate_release_notes: env.INPUT_GENERATE_RELEASE_NOTES == "true",
+        input_generate_by_commit: env.INPUT_GENERATE_BY_COMMIT === "true",
+        input_generate_by_commit_rules: parseInputGenerateByCommitRules(env.INPUT_GENERATE_BY_COMMIT_RULES || "")
     };
 };
 
@@ -65,7 +102,7 @@ export const unmatchedPatterns = (patterns: string[]): string[] => {
 };
 
 /**
- * 判断是否时 tag
+ * 判断是否是 tag
  * @param ref 
  * @returns 
  */
@@ -99,7 +136,7 @@ export const paths = (patterns: string[]): string[] => {
 };
 
 /**
- * 上传弟子
+ * 上传地址
  * @param url 
  * @returns 
  */

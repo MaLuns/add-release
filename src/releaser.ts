@@ -4,6 +4,7 @@ import { GitHub } from "@actions/github/lib/utils";
 import { statSync, readFileSync } from "fs";
 import { getType } from "mime";
 import { basename } from "path";
+import { getReleaseNotes } from "./commiter";
 
 
 type GitHub = InstanceType<typeof GitHub>;
@@ -29,12 +30,21 @@ export interface Release {
 }
 
 export interface Releaser {
+    github: GitHub;
+    /**
+     * 根据 Tag 获取 Release
+     * @param params 
+     */
     getReleaseByTag(params: {
         owner: string;
         repo: string;
         tag: string;
     }): Promise<{ data: Release }>;
 
+    /**
+     * 创建 Release
+     * @param params 
+     */
     createRelease(params: {
         owner: string;
         repo: string;
@@ -47,14 +57,22 @@ export interface Releaser {
         generate_release_notes: boolean | undefined;
     }): Promise<{ data: Release }>;
 
+    /**
+     * 获取所有 Release
+     * @param params 
+     */
     allReleases(params: {
         owner: string;
         repo: string;
     }): AsyncIterableIterator<{ data: Release[] }>;
 }
 
+/**
+ * Releas 操作
+ */
 export class GitHubReleaser implements Releaser {
     github: GitHub;
+
     constructor(github: GitHub) {
         this.github = github;
     }
@@ -91,7 +109,13 @@ export class GitHubReleaser implements Releaser {
     }
 }
 
-//
+/**
+ * 创建 Release
+ * @param config 配置信息
+ * @param releaser Releaser
+ * @param maxRetries 重试次数
+ * @returns 
+ */
 export const createRelease = async (config: Config, releaser: Releaser, maxRetries: number = 3): Promise<Release> => {
     if (maxRetries <= 0) {
         console.log(`❌ Too many retries. Aborting...`);
@@ -105,7 +129,12 @@ export const createRelease = async (config: Config, releaser: Releaser, maxRetri
 
     const tag_name = tag;
     const name = config.input_name || tag;
-    const body = releaseBody(config);
+    let body = releaseBody(config);
+
+    if (!body && config.input_generate_by_commit) {
+        body = await getReleaseNotes(config, releaser.github)
+    }
+
     const draft = config.input_draft;
     const prerelease = config.input_prerelease;
     const target_commitish = config.input_target_commitish;
@@ -114,37 +143,24 @@ export const createRelease = async (config: Config, releaser: Releaser, maxRetri
     if (target_commitish) {
         commitMessage = ` using commit "${target_commitish}"`;
     }
-    console.log(
-        `👩‍🏭 Creating new GitHub release for tag ${tag_name}${commitMessage}...`
-    );
-
-
+    console.log(`👩‍🏭 Creating new GitHub release for tag ${tag_name}${commitMessage}...`);
 
     try {
-        let release = await releaser.createRelease({
-            owner,
-            repo,
-            tag_name,
-            name,
-            body,
-            draft,
-            target_commitish,
-            prerelease,
-            generate_release_notes,
-        });
+        let release = await releaser.createRelease({ owner, repo, tag_name, name, body, draft, target_commitish, prerelease, generate_release_notes, });
         return release.data;
     } catch (error) {
         // presume a race with competing metrix runs
-        console.log(
-            `⚠️ GitHub release failed with status: ${error.status
-            }\n${JSON.stringify(error.response.data.errors)}\nretrying... (${maxRetries - 1
-            } retries remaining)`
-        );
+        console.log(`⚠️ GitHub release failed with status: ${error.status}\n${JSON.stringify(error.response.data.errors)}\nretrying... (${maxRetries - 1} retries remaining)`);
         return createRelease(config, releaser, maxRetries - 1);
     }
 
 };
 
+/**
+ * 获取资源信息
+ * @param path 
+ * @returns 
+ */
 export const asset = (path: string): ReleaseAsset => {
     return {
         name: basename(path),
@@ -158,10 +174,10 @@ export const mimeOrDefault = (path: string): string => { return getType(path) ||
 
 /**
  * 上传文件
- * @param config 
- * @param github 
+ * @param config 配置信息
+ * @param github Github 实例
  * @param url 
- * @param path 
+ * @param path 文件地址
  * @param currentAssets 
  * @returns 
  */
@@ -197,9 +213,7 @@ export const upload = async (config: Config, github: GitHub, url: string, path: 
     const json = await resp.json();
 
     if (resp.status !== 201) {
-        throw new Error(
-            `Failed to upload release asset ${name}. received status code ${resp.status
-            }\n${json.message}\n${JSON.stringify(json.errors)}`
+        throw new Error(`Failed to upload release asset ${name}. received status code ${resp.status}\n${json.message}\n${JSON.stringify(json.errors)}`
         );
     }
     return json;
