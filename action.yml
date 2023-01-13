@@ -26,6 +26,9 @@ inputs:
   repository:
     description: "Repository to make releases against, in <owner>/<repo> format"
     required: false
+  branch:
+    description: "Gives the release a branch. Defaults to the ref path to the workflow"
+    required: false
   token:
     description: "Authorized secret GitHub Personal Access Token. Defaults to github.token"
     required: false
@@ -36,10 +39,10 @@ inputs:
   generate_release_notes:
     description: "Whether to automatically generate the name and body for this release. If name is specified, the specified name will be used; otherwise, a name will be automatically generated. If body is specified, the body will be pre-pended to the automatically generated notes."
     required: false
-  generate_by_commit:
+  generate_release_notes_by_commit:
     description: "Whether to automatically generate this version of the body according to the commit record."
     required: false
-  generate_by_commit_rules:
+  generate_release_notes_by_commit_rules:
     description: "Submit record resolution rules."
     required: false
 env:

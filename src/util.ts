@@ -8,6 +8,7 @@ export interface Config {
     github_token: string;
     github_ref: string;
     github_repository: string;
+    github_branch: string;
     // user provided
     input_name?: string;
     input_tag_name?: string;
@@ -19,8 +20,8 @@ export interface Config {
     input_prerelease?: boolean;
     input_target_commitish?: string;
     input_generate_release_notes?: boolean;
-    input_generate_by_commit?: boolean;
-    input_generate_by_commit_rules?: {
+    input_generate_release_notes_by_commit?: boolean;
+    input_generate_release_notes_by_commit_rules?: {
         rule: string,
         title: string
     }[]
@@ -43,19 +44,24 @@ export const parseInputFiles = (files: string): string[] => {
     );
 };
 
+/**
+ * 解析提取规则
+ * @param rules 
+ * @returns 
+ */
 export const parseInputGenerateByCommitRules = (rules: string) => {
     try {
         const defaultRules = [
             {
-                title: '### 🚀 Features',
+                title: '🚀 Features',
                 rule: 'feat:'
             },
             {
-                title: '### 🎈 Performance',
+                title: '🎈 Performance',
                 rule: 'perf:'
             },
             {
-                title: '### 🐞 Bug Fixes',
+                title: '🐞 Bug Fixes',
                 rule: 'fix:'
             }
         ]
@@ -64,6 +70,13 @@ export const parseInputGenerateByCommitRules = (rules: string) => {
         throw new Error(`⚠️ Rules resolution failure`);
     }
 }
+
+/**
+ * 获取当前运行分支
+ * @param branch 
+ * @returns 
+ */
+export const parseBranch = (branch: string | undefined) => branch?.split('/').reverse[0]
 
 /**
  * 解析配置
@@ -75,6 +88,7 @@ export const parseConfig = (env: Env): Config => {
         github_token: env.GITHUB_TOKEN || env.INPUT_TOKEN || "",
         github_ref: env.GITHUB_REF || "",
         github_repository: env.INPUT_REPOSITORY || env.GITHUB_REPOSITORY || "",
+        github_branch: env.INPUT_BRANCH || parseBranch(env.GITHUB_WORKFLOW_REF),
         // user provided
         input_name: env.INPUT_NAME,
         input_tag_name: env.INPUT_TAG_NAME?.trim(),
@@ -85,8 +99,8 @@ export const parseConfig = (env: Env): Config => {
         input_prerelease: env.INPUT_PRERELEASE ? env.INPUT_PRERELEASE == "true" : undefined,
         input_target_commitish: env.INPUT_TARGET_COMMITISH || undefined,
         input_generate_release_notes: env.INPUT_GENERATE_RELEASE_NOTES == "true",
-        input_generate_by_commit: env.INPUT_GENERATE_BY_COMMIT === "true",
-        input_generate_by_commit_rules: parseInputGenerateByCommitRules(env.INPUT_GENERATE_BY_COMMIT_RULES || "")
+        input_generate_release_notes_by_commit: env.INPUT_GENERATE_RELEASE_NOTES_BY_COMMIT === "true",
+        input_generate_release_notes_by_commit_rules: parseInputGenerateByCommitRules(env.INPUT_GENERATE_RELEASE_NOTES_BY_COMMIT_RULES || "")
     };
 };
 

@@ -131,7 +131,7 @@ export const createRelease = async (config: Config, releaser: Releaser, maxRetri
     const name = config.input_name || tag;
     let body = releaseBody(config);
 
-    if (!body && config.input_generate_by_commit) {
+    if (!body && config.input_generate_release_notes_by_commit) {
         body = await getReleaseNotes(config, releaser.github)
     }
 

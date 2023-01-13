@@ -8,10 +8,20 @@ export interface Commit {
     node_id: string
     html_url: string
     commit: {
+        author: {
+            name?: string | undefined;
+            email?: string | undefined;
+            date?: string | undefined;
+        } | null
+        committer: {
+            name?: string | undefined;
+            email?: string | undefined;
+            date?: string | undefined;
+        } | null
         url: string
         message: string | undefined
         comment_count: number
-    },
+    }
 }
 
 export interface Tag {
@@ -24,13 +34,14 @@ export interface Tag {
     },
     node_id: string
 }
-
+export interface NoteItem {
+    url: string
+    committer?: string | undefined
+    message: string
+}
 export interface Notes {
     title: string
-    list: {
-        message: string
-        url: string
-    }[]
+    list: NoteItem[]
 }
 
 export interface Commiter {
@@ -74,7 +85,7 @@ export class GitHubCommiter implements Commiter {
 export const creatMarkDown = (notes: Notes[]): string | undefined => {
     let md: string[] = []
     notes.forEach(item => {
-        md.push(`### ${item.title}`, ...item.list.map(i => `- ${i.message}`))
+        md.push(`### ${item.title}`, ...item.list.map(i => `- ${i.message}   ${i.committer ? '@' + i.committer : ''}`))
     })
     return md.join('\n')
 }
@@ -96,7 +107,7 @@ export const getReleaseNotes = async (config: Config, gh: GitHub): Promise<strin
         const endTag = tags[1] || { commit: { sha: '' } }
 
         const getCommitUpToSha = async (sha: string, per_page: number = 50, page: number = 1): Promise<Array<Commit>> => {
-            let { data } = await commiter.getCommits({ owner, repo, per_page, page })
+            let { data } = await commiter.getCommits({ owner, repo, per_page, page, sha: config.github_branch })
             let index = data.findIndex(item => item.sha === sha)
             if (index) {
                 return data.slice(0, index)
@@ -125,12 +136,13 @@ export const getReleaseNotes = async (config: Config, gh: GitHub): Promise<strin
         }
 
         const releaseNotes: Notes[] = []
-        config.input_generate_by_commit_rules?.forEach(rule => {
+        config.input_generate_release_notes_by_commit_rules?.forEach(rule => {
             let reg = RegExp(rule.rule)
-            let notes: { message: string, url: string }[] = []
+            let notes: NoteItem[] = []
             tag_commits.forEach(commit => {
                 if (commit.commit.message && reg.test(commit.commit.message)) {
                     notes.push({
+                        committer: commit.commit.committer?.name,
                         message: commit.commit.message.split(rule.rule)[1].trim(),
                         url: commit.html_url
                     })
