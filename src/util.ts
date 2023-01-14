@@ -8,7 +8,6 @@ export interface Config {
     github_token: string;
     github_ref: string;
     github_repository: string;
-    github_branch: string;
     // user provided
     input_name?: string;
     input_tag_name?: string;
@@ -86,12 +85,10 @@ export const parseBranch = (branch: string | undefined) => {
  * @returns 
  */
 export const parseConfig = (env: Env): Config => {
-    console.log(JSON.stringify(env, null, 2))
     return {
         github_token: env.GITHUB_TOKEN || env.INPUT_TOKEN || "",
         github_ref: env.GITHUB_REF || "",
         github_repository: env.INPUT_REPOSITORY || env.GITHUB_REPOSITORY || "",
-        github_branch: parseBranch(env.INPUT_BRANCH || env.GITHUB_WORKFLOW_REF),
         // user provided
         input_name: env.INPUT_NAME,
         input_tag_name: env.INPUT_TAG_NAME?.trim(),

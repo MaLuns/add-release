@@ -26,10 +26,6 @@ inputs:
   repository:
     description: "Repository to make releases against, in <owner>/<repo> format"
     required: false
-  branch:
-    description: "Gives the release a branch. Defaults to the ref path to the workflow"
-    required: false
-      default: ${{ github.workflow_ref }}
   token:
     description: "Authorized secret GitHub Personal Access Token. Defaults to github.token"
     required: false

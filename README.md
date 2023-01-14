@@ -21,7 +21,6 @@
 | `prerelease`                              | Boolean | 是否是预览版 |
 | `files`                                   | String  | 以换行符分隔的资源路径，使用 glob 匹配后上传发布 |
 | `repository`                              | String  | `<owner>/<repo>` 格式的目标存储库名称。默认为 env.GITHUB_REPOSITORY 变量 |
-| `branch`                                  | String  | 指定分支，默认从 env.GITHUB_WORKFLOW_REF 获取分支 |
 | `target_commitish`                        | String  | 决定使用哪个提交节点 ，可以是任何分支或提交 SHA ，默认为存储库默认分支 |
 | `token`                                   | String  | GitHub 个人访问令牌。默认为 `${{ github.token }}` |
 | `generate_release_notes`                  | Boolean | 是否自动生成此版本的名称和主体。如果指定了name，则使用指定的名称;否则，将自动生成一个名称。如果指定了body，则正文将预先挂载到自动生成的注释中。有关更多信息，请参阅 [GitHub docs for this feature](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes) |
