@@ -21,7 +21,10 @@ export interface Commit {
         url: string
         message: string | undefined
         comment_count: number
-    }
+    },
+    committer: {
+        login: string | undefined
+    } | null
 }
 
 export interface Tag {
@@ -82,10 +85,23 @@ export class GitHubCommiter implements Commiter {
     }
 }
 
-export const creatMarkDown = (notes: Notes[]): string | undefined => {
+/**
+ * 生成 Markdown
+ * @param config 
+ * @param notes 
+ * @returns 
+ */
+export const creatMarkDown = (config: Config, notes: Notes[]): string | undefined => {
+    const [owner, repo] = config.github_repository.split("/");
+    const issue = (owner: string, repo: string, num: number) => `https://github.com/${owner}/${repo}/issues/${num}`
+    const issuseMd = (str: string) => str.replace(/(#([0-9]{1,}))/g, (match, p1, p2) => {
+        return `([${p1}](${issue(owner, repo, p2)}))`
+    })
+
     let md: string[] = []
+
     notes.forEach(item => {
-        md.push(`### ${item.title}`, ...item.list.map(i => `- ${i.message}   ${i.committer ? '@' + i.committer : ''}`))
+        md.push(`### ${item.title}`, ...item.list.map(i => `- ${issuseMd(i.message)}  ${i.committer ? '@' + i.committer : ''}`))
     })
     return md.join('\n')
 }
@@ -98,8 +114,8 @@ export const creatMarkDown = (notes: Notes[]): string | undefined => {
  */
 export const getReleaseNotes = async (config: Config, gh: GitHub): Promise<string | undefined> => {
     const commiter = new GitHubCommiter(gh)
-
     const [owner, repo] = config.github_repository.split("/");
+
     const { data: tags } = await commiter.getTags({ owner, repo })
 
     if (tags.length) {
@@ -143,7 +159,7 @@ export const getReleaseNotes = async (config: Config, gh: GitHub): Promise<strin
             tag_commits.forEach(commit => {
                 if (commit.commit.message && reg.test(commit.commit.message)) {
                     notes.push({
-                        committer: commit.commit.committer?.name,
+                        committer: commit.committer?.login,
                         message: commit.commit.message.split(rule.rule)[1].trim(),
                         url: commit.html_url
                     })
@@ -157,7 +173,7 @@ export const getReleaseNotes = async (config: Config, gh: GitHub): Promise<strin
             }
         })
 
-        return creatMarkDown(releaseNotes)
+        return creatMarkDown(config, releaseNotes)
     }
     return;
 }
