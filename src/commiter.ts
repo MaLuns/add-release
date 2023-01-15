@@ -125,19 +125,25 @@ export const getReleaseNotes = async (config: Config, gh: GitHub): Promise<strin
         const getCommitUpToSha = async (sha: string, per_page: number = 50, page: number = 1): Promise<Array<Commit>> => {
             let { data } = await commiter.getCommits({ owner, repo, per_page, page, sha: config.github_ref || undefined })
             console.log({ owner, repo, per_page, page, sha: config.github_ref });
-            console.log(data);
-
 
             let index = data.findIndex(item => item.sha === sha)
-            if (index) {
+            if (index > -1) {
                 return data.slice(0, index)
             } else {
-                return data.concat(await getCommitUpToSha(sha, per_page, page + 1))
+                if (data?.length) {
+                    return data.concat(await getCommitUpToSha(sha, per_page, page + 1))
+                } else {
+                    return []
+                }
             }
         }
 
         console.log(`👩‍🏭 Pull the branch ${config.github_ref} commit record ...`);
         const commits = await getCommitUpToSha(endTag.commit.sha)
+
+        console.log(`tag-sha: ${startTag.commit.sha}`);
+        console.log(`tag2-sha: ${endTag.commit.sha}`);
+        console.log(`commit-list: `, commits);
 
         const tag_commits: Commit[] = []
         let flag = false
