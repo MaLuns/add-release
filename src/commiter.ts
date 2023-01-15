@@ -124,6 +124,10 @@ export const getReleaseNotes = async (config: Config, gh: GitHub): Promise<strin
 
         const getCommitUpToSha = async (sha: string, per_page: number = 50, page: number = 1): Promise<Array<Commit>> => {
             let { data } = await commiter.getCommits({ owner, repo, per_page, page, sha: config.github_ref || undefined })
+            console.log({ owner, repo, per_page, page, sha: config.github_ref });
+            console.log(data);
+
+
             let index = data.findIndex(item => item.sha === sha)
             if (index) {
                 return data.slice(0, index)
