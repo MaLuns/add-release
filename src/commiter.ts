@@ -119,54 +119,46 @@ export const getReleaseNotes = async (config: Config, gh: GitHub): Promise<strin
     const { data: tags } = await commiter.getTags({ owner, repo })
 
     if (tags.length) {
-        const startTag = tags[0]
-        const endTag = tags[1] || { commit: { sha: '' } }
+        type TagsMap = { [key: string]: Tag }
+        let tagsMap: TagsMap = {}
+        tags.forEach(i => tagsMap[i.commit.sha] = i)
 
-        const getCommitUpToSha = async (sha: string, per_page: number = 50, page: number = 1): Promise<Array<Commit>> => {
-            let { data } = await commiter.getCommits({ owner, repo, per_page, page, sha: config.github_ref || undefined })
-            console.log({ owner, repo, per_page, page, sha: config.github_ref });
+        const getCommitUpToSha = async (tagsMap: TagsMap, isStart: boolean = false, isEnd: boolean = false, per_page: number = 50, page: number = 1): Promise<Commit[]> => {
+            const { data } = await commiter.getCommits({ owner, repo, per_page, page, sha: config.github_ref || undefined })
+            const list: Commit[] = []
 
-            let index = data.findIndex(item => item.sha === sha)
-            if (index > -1) {
-                return data.slice(0, index)
-            } else {
-                if (data?.length) {
-                    return data.concat(await getCommitUpToSha(sha, per_page, page + 1))
+            for (let index = 0; index < data.length; index++) {
+                const element = data[index];
+                if (isStart) {
+                    if (tagsMap[element.sha]) {
+                        isEnd = true;
+                        console.log(`🎯 next tag: ${element.sha}`);
+                        break;
+                    }
+                    list.push(element)
                 } else {
-                    return []
+                    if (tagsMap[element.sha]) {
+                        isStart = true
+                        list.push(element)
+                        console.log(`🎯 latest tag: ${tagsMap[element.sha]}`);
+                    }
                 }
+            }
+            if (isEnd || data?.length) {
+                return list;
+            } else {
+                return list.concat(await getCommitUpToSha(tagsMap, isStart, isEnd, per_page, page + 1))
             }
         }
 
-        console.log(`👩‍🏭 Pull the branch ${config.github_ref} commit record ...`);
-        const commits = await getCommitUpToSha(endTag.commit.sha)
-
-        console.log(`tag-sha: ${startTag.commit.sha}`);
-        console.log(`tag2-sha: ${endTag.commit.sha}`);
-        console.log(`commit-list: `, commits);
-
-        const tag_commits: Commit[] = []
-        let flag = false
-        for (let index = 0; index < commits.length; index++) {
-            const element = commits[index];
-            if (flag) {
-                if (element.sha === endTag.commit.sha) {
-                    break;
-                }
-                tag_commits.push(element)
-            }
-
-            if (element.sha === startTag.commit.sha) {
-                flag = true
-                tag_commits.push(element)
-            }
-        }
+        const commits = await getCommitUpToSha(tagsMap)
+        console.log(`📚 Submits records: `, commits);
 
         const releaseNotes: Notes[] = []
         config.input_generate_release_notes_by_commit_rules?.forEach(rule => {
             let reg = RegExp(rule.rule)
             let notes: NoteItem[] = []
-            tag_commits.forEach(commit => {
+            commits.forEach(commit => {
                 if (commit.commit.message && reg.test(commit.commit.message)) {
                     notes.push({
                         committer: commit.committer?.login,
@@ -185,5 +177,6 @@ export const getReleaseNotes = async (config: Config, gh: GitHub): Promise<strin
 
         return creatMarkDown(config, releaseNotes)
     }
+
     return;
 }
